@@ -1,0 +1,40 @@
+const API_URL = 'https://YOUR-API-ENDPOINT/live-matches'; // Replace with your chosen API endpoint
+const API_KEY = 'YOUR_API_KEY'; // Remove if not required by the endpoint
+
+async function fetchLiveMatches() {
+  try {
+    const response = await fetch(API_URL, {
+      headers: {
+        // Adjust header name to match your API provider (e.g., 'x-apisports-key' or 'Authorization')
+        'x-apisports-key': API_KEY
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Map the API's response fields to AfroSoccer's match format
+    const formattedMatches = (data.response || data.matches || []).map((item) => ({
+      id: item.fixture?.id ?? item.id,
+      league: item.league?.name ?? item.league ?? 'African Football',
+      homeTeam: item.teams?.home?.name ?? item.homeTeam ?? 'Home',
+      awayTeam: item.teams?.away?.name ?? item.awayTeam ?? 'Away',
+      homeScore: item.goals?.home ?? item.homeScore ?? 0,
+      awayScore: item.goals?.away ?? item.awayScore ?? 0,
+      minute: item.fixture?.status?.elapsed ? `${item.fixture.status.elapsed}'` : (item.minute || 'LIVE'),
+      status: item.fixture?.status?.short || item.status || 'LIVE'
+    }));
+
+    renderMatches(formattedMatches); // Call your existing AfroSoccer render function
+  } catch (error) {
+    console.error('Failed to load live scores:', error);
+    // Keep your fallback / simulated data or show a friendly error banner in the UI
+  }
+}
+
+// Load immediately, then refresh every 60 seconds to respect rate limits
+fetchLiveMatches();
+setInterval(fetchLiveMatches, 60000);
